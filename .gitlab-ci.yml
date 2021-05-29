@@ -1,0 +1,61 @@
+stages:
+    - maven-build
+    - maven-test
+    - autodeploy
+    - swift-build
+    - swift-test
+    
+mavenbuild:
+    stage: maven-build
+    tags:
+      - BACKEND
+    script:
+      - cd Backend/userController/inClass
+      - mvn package
+     
+maventest:
+    stage: maven-test
+    tags:
+      - BACKEND
+    script:
+      - cd Backend/userController/inClass 
+      - mvn test
+    artifacts:
+      paths:
+        - Backend/userController/inClass/target/*.jar
+
+autodeploy:
+    stage: autodeploy
+    tags:
+      - BACKEND
+    script:
+      - cd Backend/userController/inClass 
+      - mvn package
+      - sudo mv target/inClass-1.0-SNAPSHOT.jar /target/web-demo.jar 
+      - sudo systemctl stop web-demo
+      - sudo systemctl start web-demo
+    only:
+       refs:
+          - master
+       changes: 
+          - Backend/**/*
+
+    
+
+swiftbuild:
+    image: swift:latest
+    stage: swift-build
+    tags:
+      - FRONTEND
+    script:
+      - cd Frontend
+      - xcodebuild clean -project Dropp.xcodeproj -scheme Dropp | xcpretty
+
+swifttest:
+    image: swift
+    stage: swift-test
+    tags:
+      - FRONTEND
+    script: 
+      - cd Frontend
+      - xcodebuild test -project Dropp.xcodeproj -scheme Dropp -destination 'platform=iOS Simulator,name=iPhone 11,OS=12.0' | xcpretty -s
